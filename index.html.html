@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oscar (OY) 專屬音樂台</title>
+    <style>
+        :root { --accent-color: #2563eb; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #1e293b; margin-bottom: 10px; }
+        .subtitle { color: #64748b; margin-bottom: 30px; }
+        
+        /* 播放器容器 */
+        .player-container { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        audio { width: 100%; margin: 20px 0; }
+
+        /* 歌單樣式 */
+        .playlist { margin-top: 20px; border-top: 1px solid #e2e8f0; }
+        .song-item { padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .song-item:hover { background: #f8fafc; color: var(--accent-color); }
+        .song-item.active { border-left: 4px solid var(--accent-color); background: #eff6ff; font-weight: bold; }
+        
+        .loading { text-align: center; color: #94a3b8; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Oscar (OY) 專屬音樂台</h1>
+    <div class="subtitle">Oscar專屬</div>
+
+    <div class="player-container">
+        <div id="current-title" style="font-weight: bold; margin-bottom: 10px;">請選擇歌曲</div>
+        <audio id="main-player" controls></audio>
+        
+        <div class="playlist" id="playlist">
+            <div class="loading">正在從雲端載入音樂清單...</div>
+        </div>
+    </div>
+
+    <script>
+        // 【關鍵】在此處貼上你的 Google Apps Script 網頁應用程式網址
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz43aRnB_lziZ2Bc3_-R3lzEsDqznOqhkAxqKl8kslHJN0aHLkx6zrx-KVp3H3PaA4fkQ/exec';
+
+        const player = document.getElementById('main-player');
+        const playlistDiv = document.getElementById('playlist');
+        const currentTitleDisplay = document.getElementById('current-title');
+
+        async function fetchPlaylist() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const songs = await response.json();
+                
+                if (songs.length === 0) {
+                    playlistDiv.innerHTML = '<div class="loading">清單目前是空的</div>';
+                    return;
+                }
+
+                playlistDiv.innerHTML = ''; 
+                songs.forEach((song, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'song-item';
+                    item.innerHTML = `<span>${index + 1}. ${song.title}</span><small>▶</small>`;
+                    
+                    item.onclick = () => {
+                        // 切換歌曲
+                        player.src = song.url;
+                        player.play();
+                        
+                        // 更新顯示文字
+                        currentTitleDisplay.innerText = "播放中: " + song.title;
+                        
+                        // 更新樣式
+                        document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                    };
+                    playlistDiv.appendChild(item);
+                });
+            } catch (error) {
+                console.error("載入失敗:", error);
+                playlistDiv.innerHTML = '<div class="loading" style="color:red;">載入清單失敗，請檢查網址或權限。</div>';
+            }
+        }
+
+        fetchPlaylist();
+    </script>
+</body>
+</html>
