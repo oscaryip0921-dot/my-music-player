@@ -4,97 +4,202 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chow Chow 專屬音樂台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <style>
-        :root { --accent-color: #2563eb; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { color: #1e293b; margin-bottom: 10px; }
-        .subtitle { color: #64748b; margin-bottom: 30px; }
-        
-        /* 播放器容器 */
-        .player-container { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        
-        audio { width: 100%; margin: 20px 0; }
+        :root {
+            --bg-color: #0a0a0c;
+            --accent-color: #3b82f6;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
 
-        /* 歌單樣式 */
-        .playlist { margin-top: 20px; border-top: 1px solid #e2e8f0; }
-        .song-item { padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-        .song-item:hover { background: #f8fafc; color: var(--accent-color); }
-        .song-item.active { border-left: 4px solid var(--accent-color); background: #eff6ff; font-weight: bold; }
-        
-        .loading { text-align: center; color: #94a3b8; padding: 20px; }
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 5px; letter-spacing: 2px; }
+        .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 40px; }
+
+        /* Swiper 容器設定 */
+        .swiper {
+            width: 100%;
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+
+        .swiper-slide {
+            background-position: center;
+            background-size: cover;
+            width: 300px; /* CD 大小 */
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* CD 樣式 */
+        .cd-disk {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1c1c1e 0%, #000 100%);
+            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* CD 中心孔與標籤 */
+        .cd-label {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 10px;
+            color: #000;
+            font-weight: bold;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* 正在播放時的旋轉動畫 */
+        .playing .cd-disk {
+            animation: rotateCD 5s linear infinite;
+        }
+
+        @keyframes rotateCD {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 控制面板 */
+        .controls {
+            margin-top: 50px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        audio {
+            width: 100%;
+            filter: invert(1); /* 讓原生播放器變暗色調 */
+            opacity: 0.7;
+        }
+
+        .now-playing {
+            margin-top: 15px;
+            font-weight: 200;
+            color: var(--accent-color);
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
 
     <h1>Chow Chow 專屬音樂台</h1>
-    <div class="subtitle">Chow Chow</div>
+    <div class="subtitle">Chow Chow專屬</div>
 
-    <div class="player-container">
-        <div id="current-title" style="font-weight: bold; margin-bottom: 10px;">請選擇歌曲</div>
-        <audio id="main-player" controls></audio>
-        
-        <div class="playlist" id="playlist">
-            <div class="loading">正在從雲端載入音樂清單...</div>
-        </div>
+    <div class="swiper">
+        <div class="swiper-wrapper" id="cd-wrapper">
+            </div>
     </div>
 
+    <div class="controls">
+        <div id="current-song-name" class="now-playing">請左右滑動挑選 CD</div>
+        <audio id="main-player" controls></audio>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        // 【關鍵】在此處貼上你的 Google Apps Script 網頁應用程式網址
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz43aRnB_lziZ2Bc3_-R3lzEsDqznOqhkAxqKl8kslHJN0aHLkx6zrx-KVp3H3PaA4fkQ/exec';
-
         const player = document.getElementById('main-player');
-        // 1. 初始化時從本地儲存讀取音量
-const savedVolume = localStorage.getItem('oscar_player_volume');
-if (savedVolume !== null) {
-    player.volume = savedVolume;
-}
+        const cdWrapper = document.getElementById('cd-wrapper');
+        const songNameDisplay = document.getElementById('current-song-name');
 
-// 2. 監聽音量變動事件 (volumechange)
-player.addEventListener('volumechange', () => {
-    // 將音量存入 localStorage (值介於 0 到 1 之間)
-    localStorage.setItem('oscar_player_volume', player.volume);
-});
-        const playlistDiv = document.getElementById('playlist');
-        const currentTitleDisplay = document.getElementById('current-title');
+        // 音量記憶
+        const savedVolume = localStorage.getItem('chow_player_volume');
+        if (savedVolume !== null) player.volume = savedVolume;
+        player.addEventListener('volumechange', () => {
+            localStorage.setItem('chow_player_volume', player.volume);
+        });
+
+        // 初始化 Swiper 3D 效果
+        let swiper;
 
         async function fetchPlaylist() {
-    // 1. 先嘗試讀取上次存下的歌單 (秒開)
-    const cachedData = localStorage.getItem('oscar_playlist');
-    if (cachedData) {
-        renderSongs(JSON.parse(cachedData));
-    }
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const songs = await response.json();
+                renderCDs(songs);
+            } catch (error) {
+                console.error("載入失敗", error);
+            }
+        }
 
-    try {
-        // 2. 在背景抓取最新的 Google 資料
-        const response = await fetch(SCRIPT_URL);
-        const songs = await response.json();
-        
-        // 3. 儲存最新資料並更新畫面
-        localStorage.setItem('oscar_playlist', JSON.stringify(songs));
-        renderSongs(songs);
-    } catch (error) {
-        console.error("更新失敗:", error);
-        if (!cachedData) playlistDiv.innerHTML = '<div class="loading">載入失敗</div>';
-    }
-}
+        function renderCDs(songs) {
+            cdWrapper.innerHTML = '';
+            songs.forEach((song, index) => {
+                const slide = document.createElement('div');
+                slide.className = 'swiper-slide';
+                slide.innerHTML = `
+                    <div class="cd-disk" onclick="playSong('${song.url}', '${song.title}', this)">
+                        <div class="cd-label">${song.title}</div>
+                    </div>
+                `;
+                cdWrapper.appendChild(slide);
+            });
 
-// 提取渲染邏輯，方便重複使用
-function renderSongs(songs) {
-    playlistDiv.innerHTML = ''; 
-    songs.forEach((song, index) => {
-        const item = document.createElement('div');
-        item.className = 'song-item';
-        item.innerHTML = `<span>${index + 1}. ${song.title}</span><small>▶</small>`;
-        item.onclick = () => {
-            player.src = song.url;
+            // 初始化或更新 Swiper
+            swiper = new Swiper('.swiper', {
+                effect: 'coverflow',
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: 'auto',
+                coverflowEffect: {
+                    rotate: 50,
+                    stretch: 0,
+                    depth: 100,
+                    modifier: 1,
+                    slideShadows: true,
+                },
+                on: {
+                    slideChange: function () {
+                        // 換 CD 時停止旋轉特效 (可選)
+                        document.querySelectorAll('.swiper-slide').forEach(el => el.classList.remove('playing'));
+                    }
+                }
+            });
+        }
+
+        function playSong(url, title, element) {
+            player.src = url;
             player.play();
-            currentTitleDisplay.innerText = "播放中: " + song.title;
-            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
-            item.classList.add('active');
-        };
-        playlistDiv.appendChild(item);
-    });
-}
+            songNameDisplay.innerText = "Playing: " + title;
+            
+            // 移除所有旋轉，只給當前點擊的 CD 加入旋轉
+            document.querySelectorAll('.swiper-slide').forEach(el => el.classList.remove('playing'));
+            element.parentElement.classList.add('playing');
+        }
+
+        // 監聽播放/暫停，控制轉動
+        player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
+        player.onpause = () => document.querySelector('.swiper-slide-active')?.classList.remove('playing');
 
         fetchPlaylist();
     </script>
