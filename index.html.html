@@ -47,40 +47,43 @@
         const currentTitleDisplay = document.getElementById('current-title');
 
         async function fetchPlaylist() {
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const songs = await response.json();
-                
-                if (songs.length === 0) {
-                    playlistDiv.innerHTML = '<div class="loading">清單目前是空的</div>';
-                    return;
-                }
+    // 1. 先嘗試讀取上次存下的歌單 (秒開)
+    const cachedData = localStorage.getItem('oscar_playlist');
+    if (cachedData) {
+        renderSongs(JSON.parse(cachedData));
+    }
 
-                playlistDiv.innerHTML = ''; 
-                songs.forEach((song, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'song-item';
-                    item.innerHTML = `<span>${index + 1}. ${song.title}</span><small>▶</small>`;
-                    
-                    item.onclick = () => {
-                        // 切換歌曲
-                        player.src = song.url;
-                        player.play();
-                        
-                        // 更新顯示文字
-                        currentTitleDisplay.innerText = "播放中: " + song.title;
-                        
-                        // 更新樣式
-                        document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
-                        item.classList.add('active');
-                    };
-                    playlistDiv.appendChild(item);
-                });
-            } catch (error) {
-                console.error("載入失敗:", error);
-                playlistDiv.innerHTML = '<div class="loading" style="color:red;">載入清單失敗，請檢查網址或權限。</div>';
-            }
-        }
+    try {
+        // 2. 在背景抓取最新的 Google 資料
+        const response = await fetch(SCRIPT_URL);
+        const songs = await response.json();
+        
+        // 3. 儲存最新資料並更新畫面
+        localStorage.setItem('oscar_playlist', JSON.stringify(songs));
+        renderSongs(songs);
+    } catch (error) {
+        console.error("更新失敗:", error);
+        if (!cachedData) playlistDiv.innerHTML = '<div class="loading">載入失敗</div>';
+    }
+}
+
+// 提取渲染邏輯，方便重複使用
+function renderSongs(songs) {
+    playlistDiv.innerHTML = ''; 
+    songs.forEach((song, index) => {
+        const item = document.createElement('div');
+        item.className = 'song-item';
+        item.innerHTML = `<span>${index + 1}. ${song.title}</span><small>▶</small>`;
+        item.onclick = () => {
+            player.src = song.url;
+            player.play();
+            currentTitleDisplay.innerText = "播放中: " + song.title;
+            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+        };
+        playlistDiv.appendChild(item);
+    });
+}
 
         fetchPlaylist();
     </script>
