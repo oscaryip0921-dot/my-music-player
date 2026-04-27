@@ -232,20 +232,15 @@
                 on: {
                     slideChangeTransitionEnd: function () {
                         const activeSlide = this.slides[this.activeIndex];
+                        // 找到該張 CD 的點擊元素或獲取 data-url
                         const cd = activeSlide.querySelector('.cd-disk');
                         if (cd) {
-                            const songUrl = cd.dataset.url || cd.getAttribute('onclick').match(/'([^']+)'/)[1];
-                            const songTitle = cd.innerText;
+                            // 直接調用你原本寫好的 playSong 函式
+                            // 假設你的 renderCD 裡有把 url 存在 dataset 裡
+                            const songUrl = cd.getAttribute('onclick').match(/'([^']+)'/)[1];
+                            const songTitle = cd.innerText; 
                             playSong(songUrl, songTitle, cd);
-                        }
-                    },
-                    // 新增：第一次觸碰時解鎖
-                    touchStart: function() {
-                        if (audioContext && audioContext.state === 'suspended') {
-                            audioContext.resume();
-                        }
-                    }
-                }
+            }
         }
     }
             });
