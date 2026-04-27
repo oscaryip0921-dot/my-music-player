@@ -270,40 +270,46 @@
         }
 
         function playSong(url, title, el) {
-                // 1. 每次播放都嘗試啟動/恢復音訊環境
-                if (!isInitialized) {
-                    initVisualizer();
-                    isInitialized = true;
-                }
-                
-                // 強制 Resume (針對 Android Chrome 的關鍵)
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume().then(() => {
-                        console.log("AudioContext 已成功恢復");
-                    });
-                }
-            
-                // 2. 處理播放
-                player.src = url;
-                player.load(); 
-                
-                // 使用 Promise 處理播放請求
-                var playPromise = player.play();
-            
-                if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        // 播放成功
-                        titleDisplay.innerText = title;
-                    }).catch(error => {
-                        // 播放被攔截（通常是手機瀏覽器還沒被「解鎖」）
-                        console.log("播放被攔截，等待使用者點擊", error);
-                        titleDisplay.innerText = "請點擊 CD 開始播放";
-                    });
-                }
-            
-                document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-                if(el) el.parentElement.classList.add('playing');
+            // 1. 初始化音訊引擎
+            if (!isInitialized) {
+                initVisualizer();
+                isInitialized = true;
             }
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        
+            // 2. 針對 Android 的格式優化
+            // 如果網址是 .3gp，嘗試換成 .mp3 看看 (Cloudinary 通常支援)
+            let playUrl = url;
+            if (playUrl.endsWith('.3gp')) {
+                playUrl = playUrl.replace('.3gp', '.mp3');
+            }
+        
+            // 3. 設定屬性
+            player.crossOrigin = "anonymous"; // 動態加入
+            player.src = playUrl;
+            player.load(); 
+        
+            // 4. 播放並處理錯誤
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    titleDisplay.innerText = title;
+                }).catch(error => {
+                    console.error("Android 播放攔截:", error);
+                    // 如果還是不行，可能是 3gp/mp3 轉換問題，換回原網址試試
+                    if (playUrl !== url) {
+                        player.src = url;
+                        player.play();
+                    }
+                });
+            }
+        
+            // 動畫邏輯
+            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+            if(el) el.parentElement.classList.add('playing');
+        }
 
         // 播放狀態與動畫同步
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
