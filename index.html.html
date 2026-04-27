@@ -3,165 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chow Chow 專屬音樂台</title>
+    <title>Chow Chow 專屬音樂台 2026</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <style>
         :root {
-            --bg-color: #0a0a0c;
-            --accent-color: #3b82f6;
-            --glass: rgba(255, 255, 255, 0.05);
+            --bg-color: #0f0f11;
+            --surface-color: #1a1a1d;
+            --accent-color: #ffffff; /* 2026 流行純白光感 */
+            --glow-color: rgba(255, 255, 255, 0.1);
         }
 
-       body {
+        body {
             background-color: var(--bg-color);
-            color: white;
+            /* 2026 經典黑色背景質感：加入微弱的噪點與漸層 */
+            background-image: radial-gradient(circle at center, #252528 0%, #0f0f11 100%);
+            color: #e0e0e0;
             font-family: 'Inter', -apple-system, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            /* 修改這裡：使用 dvh 以適配行動裝置工具欄 */
-            height: 100dvh; 
-            width: 100vw;
+            justify-content: space-between;
+            height: 100dvh; /* 解決行動端 URL 遮擋 */
             overflow: hidden;
-            /* 增加 padding 防止內容過於貼近邊緣 */
-            padding: 20px 0;
             box-sizing: border-box;
+            padding: 40px 0;
         }
 
-        h1 { font-size: 1.5rem; margin-bottom: 5px; letter-spacing: 2px; }
-        .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 40px; }
+        /* 標題區：時尚窄體設計 */
+        .header {
+            text-align: center;
+            z-index: 10;
+        }
+        h1 { font-size: 1.2rem; letter-spacing: 5px; font-weight: 200; margin: 0; color: var(--accent-color); text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .subtitle { font-size: 0.7rem; color: #666; letter-spacing: 3px; margin-top: 5px; }
 
-        /* Swiper 容器設定 */
-        .swiper {
-            flex-grow: 1; 
+        /* CD 與光暈容器 */
+        .player-core {
+            position: relative;
             width: 100%;
+            flex-grow: 1;
             display: flex;
             align-items: center;
+            justify-content: center;
+        }
+
+        /* 2026 重點：動態光暈 (會隨 JS 控制大小) */
+        .lighting-effect {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            transition: transform 0.1s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .swiper {
+            width: 100%;
+            height: 400px;
+            z-index: 2;
         }
 
         .swiper-slide {
-            background-position: center;
-            background-size: cover;
-            width: 300px; /* CD 大小 */
-            height: 300px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            width: 300px;
         }
 
-        /* CD 樣式 */
+        /* CD 實體設計：加入金屬紋路 */
         .cd-disk {
-            width: 260px;
-            height: 260px;
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1c1c1e 0%, #000 100%);
-            border: 2px solid #333;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            background: 
+                radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%),
+                repeating-radial-gradient(#222 0, #222 1px, #111 2px, #111 3px); /* 模擬唱片溝槽 */
+            border: 8px solid #2a2a2e;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* CD 中心孔與標籤 */
         .cd-label {
-            width: 90px;
-            height: 90px;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px; height: 100px;
             border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 0.7rem;
-            padding: 10px;
-            color: #000;
-            font-weight: bold;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+            background: #fff;
+            background-image: linear-gradient(135deg, #e0e0e0, #ffffff);
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; color: #000; font-size: 0.7rem; font-weight: 800;
+            padding: 10px; box-sizing: border-box;
+            border: 4px solid #111;
         }
 
-        /* 正在播放時的旋轉動畫 */
+        /* 旋轉動畫 */
         .playing .cd-disk {
-            animation: rotateCD 5s linear infinite;
+            animation: rotateCD 8s linear infinite;
         }
 
-        @keyframes rotateCD {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes rotateCD { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* 控制面板 */
-        .controls {
-            margin-bottom: env(safe-area-inset-bottom); /* 適配手勢導航列 */
-            padding-bottom: 20px;
-            width: 90%;
-            max-width: 400px;
+        /* 底部控制台：經典灰黑質感 */
+        .controls-panel {
+            width: 85%;
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
             text-align: center;
+            z-index: 10;
+            margin-bottom: 20px;
         }
+
+        #song-title { font-size: 0.9rem; margin-bottom: 15px; font-weight: 300; letter-spacing: 1px; color: #aaa; }
 
         audio {
             width: 100%;
-            filter: invert(1); /* 讓原生播放器變暗色調 */
-            opacity: 0.7;
-        }
-
-        .now-playing {
-            margin-top: 15px;
-            font-weight: 200;
-            color: var(--accent-color);
-            text-transform: uppercase;
+            height: 35px;
+            filter: invert(1) hue-rotate(180deg) brightness(1.5); /* 讓播放器變銀色感 */
         }
     </style>
 </head>
 <body>
 
-    <h1>Chow Chow 專屬音樂台</h1>
-    <div class="subtitle">Chow Chow專屬</div>
-
-    <div class="swiper">
-        <div class="swiper-wrapper" id="cd-wrapper">
-            </div>
+    <div class="header">
+        <h1>Chow Chow EMO Play List</h1>
+        <div class="subtitle">PREMIUM CLASSIC SERIES 2026</div>
     </div>
 
-    <div class="controls">
-        <div id="current-song-name" class="now-playing">請左右滑動挑選 CD</div>
-        <audio id="main-player" controls></audio>
+    <div class="player-core">
+        <div id="light-effect" class="lighting-effect"></div>
+        
+        <div class="swiper">
+            <div class="swiper-wrapper" id="cd-wrapper">
+                </div>
+        </div>
+    </div>
+
+    <div class="controls-panel">
+        <div id="song-title">CHOOSE A RECORD</div>
+        <audio id="main-player" controls loop></audio>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz43aRnB_lziZ2Bc3_-R3lzEsDqznOqhkAxqKl8kslHJN0aHLkx6zrx-KVp3H3PaA4fkQ/exec';
         const player = document.getElementById('main-player');
-        const cdWrapper = document.getElementById('cd-wrapper');
-        const songNameDisplay = document.getElementById('current-song-name');
+        const lightEffect = document.getElementById('light-effect');
+        const titleDisplay = document.getElementById('song-title');
+        
+        let audioContext, analyser, dataArray;
 
-        // 音量記憶
-        const savedVolume = localStorage.getItem('chow_player_volume');
-        if (savedVolume !== null) player.volume = savedVolume;
-        player.addEventListener('volumechange', () => {
-            localStorage.setItem('chow_player_volume', player.volume);
-        });
+        // 初始化音量與音量記憶
+        const savedVol = localStorage.getItem('emo_vol') || 0.7;
+        player.volume = savedVol;
+        player.onvolumechange = () => localStorage.setItem('emo_vol', player.volume);
 
-        // 初始化 Swiper 3D 效果
-        let swiper;
+        // 1. 初始化音訊分析器 (Lighting Effect 的關鍵)
+        function initVisualizer() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(player);
+            analyser = audioContext.createAnalyser();
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+            analyser.fftSize = 64; // 只需要基礎頻率
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            animateGlow();
+        }
+
+        // 2. 讓光暈隨音量跳動
+        function animateGlow() {
+            requestAnimationFrame(animateGlow);
+            if (!analyser) return;
+            analyser.getByteFrequencyData(dataArray);
+            // 取得平均音量
+            let sum = 0;
+            for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let average = sum / dataArray.length;
+            
+            // 根據音量縮放光暈
+            let scale = 1 + (average / 150); 
+            let opacity = 0.1 + (average / 255);
+            lightEffect.style.transform = `scale(${scale})`;
+            lightEffect.style.opacity = opacity;
+        }
 
         async function fetchPlaylist() {
             try {
-                const response = await fetch(SCRIPT_URL);
-                const songs = await response.json();
+                const res = await fetch(SCRIPT_URL);
+                const songs = await res.json();
                 renderCDs(songs);
-            } catch (error) {
-                console.error("載入失敗", error);
-            }
+            } catch (e) { console.error(e); }
         }
 
         function renderCDs(songs) {
-            cdWrapper.innerHTML = '';
-            songs.forEach((song, index) => {
+            const wrapper = document.getElementById('cd-wrapper');
+            songs.forEach(song => {
                 const slide = document.createElement('div');
                 slide.className = 'swiper-slide';
                 slide.innerHTML = `
@@ -169,42 +216,30 @@
                         <div class="cd-label">${song.title}</div>
                     </div>
                 `;
-                cdWrapper.appendChild(slide);
+                wrapper.appendChild(slide);
             });
 
-            // 初始化或更新 Swiper
-            swiper = new Swiper('.swiper', {
+            new Swiper('.swiper', {
                 effect: 'coverflow',
-                grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
-                coverflowEffect: {
-                    rotate: 50,
-                    stretch: 0,
-                    depth: 100,
-                    modifier: 1,
-                    slideShadows: true,
-                },
-                on: {
-                    slideChange: function () {
-                        // 換 CD 時停止旋轉特效 (可選)
-                        document.querySelectorAll('.swiper-slide').forEach(el => el.classList.remove('playing'));
-                    }
-                }
+                coverflowEffect: { rotate: 30, stretch: 0, depth: 200, modifier: 1, slideShadows: false }
             });
         }
 
-        function playSong(url, title, element) {
+        function playSong(url, title, el) {
+            initVisualizer(); // 點擊時啟動音訊引擎
+            if (audioContext.state === 'suspended') audioContext.resume();
+
             player.src = url;
             player.play();
-            songNameDisplay.innerText = "Playing: " + title;
+            titleDisplay.innerText = title;
             
-            // 移除所有旋轉，只給當前點擊的 CD 加入旋轉
-            document.querySelectorAll('.swiper-slide').forEach(el => el.classList.remove('playing'));
-            element.parentElement.classList.add('playing');
+            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+            el.parentElement.classList.add('playing');
         }
 
-        // 監聽播放/暫停，控制轉動
+        // 播放狀態與動畫同步
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
         player.onpause = () => document.querySelector('.swiper-slide-active')?.classList.remove('playing');
 
