@@ -162,15 +162,6 @@
                 </div>
         </div>
     </div>
-    <div class="player-core">
-        <div id="light-effect" class="lighting-effect"></div>
-        <div id="loading-spinner" style="position:absolute; color:#555; letter-spacing:3px; font-size:0.8rem;">
-            LOADING RECORDS...
-        </div>
-        <div class="swiper">
-            <div class="swiper-wrapper" id="cd-wrapper"></div>
-        </div>
-    </div>
     <div class="controls-panel">
         <div id="song-title">CHOOSE A RECORD</div>
         <audio id="main-player" controls loop></audio>
@@ -191,18 +182,6 @@
         player.volume = savedVol;
         player.onvolumechange = () => localStorage.setItem('emo_vol', player.volume);
         // Hide load
-         async function fetchPlaylist() {
-            try {
-                const res = await fetch(SCRIPT_URL);
-                const songs = await res.json();
-                // 資料回來了，隱藏 Loading
-                document.getElementById('loading-spinner').style.display = 'none';
-                renderCDs(songs);
-            } catch (e) { 
-                document.getElementById('loading-spinner').innerText = "LOAD FAILED";
-                console.error(e); 
-            }
-        }
         
         // 1. 初始化音訊分析器 (Lighting Effect 的關鍵)
         function initVisualizer() {
