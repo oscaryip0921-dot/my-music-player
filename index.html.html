@@ -151,7 +151,7 @@
 
     <div class="controls-panel">
         <div id="song-title">CHOOSE A RECORD</div>
-        <audio id="main-player" controls loop></audio>
+        <audio id="main-player" controls loop crossorigin="anonymous"></audio>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -228,11 +228,19 @@
         }
 
         function playSong(url, title, el) {
-            initVisualizer(); // 點擊時啟動音訊引擎
-            if (audioContext.state === 'suspended') audioContext.resume();
-
+            initVisualizer(); 
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+        
+            // 在 Console 印出網址，方便你 Debug 看網址有沒有被改壞
+            console.log("正在嘗試播放網址:", url);
+        
             player.src = url;
-            player.play();
+            player.load(); // 關鍵：針對 .3gp 重新載入
+            
+            player.play().catch(e => {
+                console.error("播放失敗，請檢查 Cloudinary 連結是否有效:", e);
+            });
+        
             titleDisplay.innerText = title;
             
             document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
