@@ -249,13 +249,13 @@
                             const songUrl = cd.getAttribute('onclick').match(/'([^']+)'/)[1];
                             const songTitle = cd.innerText; 
                             playSong(songUrl, songTitle, cd);
-            },
-                        // 額外加入這個，讓 Android 在使用者開始滑動的那一刻就嘗試恢復音訊
-        touchStart: function() {
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
             }
-        }
+        },
+                    // 額外加入這個，讓 Android 在使用者開始滑動的那一刻就嘗試恢復音訊
+                touchStart: function() {
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+            }
         }
     }
             });
