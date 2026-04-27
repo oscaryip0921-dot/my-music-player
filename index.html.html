@@ -247,24 +247,40 @@
         }
 
         function playSong(url, title, el) {
-            initVisualizer(); 
-            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
-        
-            // 在 Console 印出網址，方便你 Debug 看網址有沒有被改壞
-            console.log("正在嘗試播放網址:", url);
-        
-            player.src = url;
-            player.load(); // 關鍵：針對 .3gp 重新載入
+                // 1. 每次播放都嘗試啟動/恢復音訊環境
+                if (!isInitialized) {
+                    initVisualizer();
+                    isInitialized = true;
+                }
+                
+                // 強制 Resume (針對 Android Chrome 的關鍵)
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log("AudioContext 已成功恢復");
+                    });
+                }
             
-            player.play().catch(e => {
-                console.error("播放失敗，請檢查 Cloudinary 連結是否有效:", e);
-            });
-        
-            titleDisplay.innerText = title;
+                // 2. 處理播放
+                player.src = url;
+                player.load(); 
+                
+                // 使用 Promise 處理播放請求
+                var playPromise = player.play();
             
-            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-            el.parentElement.classList.add('playing');
-        }
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        // 播放成功
+                        titleDisplay.innerText = title;
+                    }).catch(error => {
+                        // 播放被攔截（通常是手機瀏覽器還沒被「解鎖」）
+                        console.log("播放被攔截，等待使用者點擊", error);
+                        titleDisplay.innerText = "請點擊 CD 開始播放";
+                    });
+                }
+            
+                document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+                if(el) el.parentElement.classList.add('playing');
+            }
 
         // 播放狀態與動畫同步
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
