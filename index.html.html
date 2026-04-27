@@ -51,12 +51,13 @@
         /* 2026 重點：動態光暈 (會隨 JS 控制大小) */
         .lighting-effect {
             position: absolute;
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 75%);
             border-radius: 50%;
-            filter: blur(40px);
-            transition: transform 0.1s ease;
+            filter: blur(60px);
+            opacity: 0.2; /* 基本亮度 */
+            transition: transform 0.08s ease-out;
             pointer-events: none;
             z-index: 1;
         }
@@ -74,20 +75,21 @@
             width: 300px;
         }
 
-        /* CD 實體設計：加入金屬紋路 */
+        /* 強化後的 CD 質感：加入更多線條與反射 */
         .cd-disk {
-            width: 280px;
-            height: 280px;
+            width: 290px;
+            height: 290px;
             border-radius: 50%;
             background: 
-                radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%),
-                repeating-radial-gradient(#222 0, #222 1px, #111 2px, #111 3px); /* 模擬唱片溝槽 */
-            border: 8px solid #2a2a2e;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
+                /* 1. 2026 高品質反射光 */
+                linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%),
+                /* 2. 更密集的黑膠唱片溝槽線條 */
+                repeating-radial-gradient(circle, #222 0, #222 1px, #000 1.5px, #111 2.5px);
+            border: 10px solid #1a1a1a;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.1);
             position: relative;
             cursor: pointer;
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        }    
 
         .cd-label {
             position: absolute;
@@ -186,14 +188,16 @@
             requestAnimationFrame(animateGlow);
             if (!analyser) return;
             analyser.getByteFrequencyData(dataArray);
-            // 取得平均音量
+            
             let sum = 0;
             for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
             let average = sum / dataArray.length;
             
-            // 根據音量縮放光暈
-            let scale = 1 + (average / 150); 
-            let opacity = 0.1 + (average / 255);
+            // 調整這兩個係數：讓跳動更明顯
+            // 之前可能是 150/255，現在改為 100/150 讓反應更劇烈
+            let scale = 1 + (average / 100); 
+            let opacity = 0.2 + (average / 150); 
+            
             lightEffect.style.transform = `scale(${scale})`;
             lightEffect.style.opacity = opacity;
         }
@@ -223,7 +227,22 @@
                 effect: 'coverflow',
                 centeredSlides: true,
                 slidesPerView: 'auto',
-                coverflowEffect: { rotate: 30, stretch: 0, depth: 200, modifier: 1, slideShadows: false }
+                coverflowEffect: { rotate: 25, stretch: 0, depth: 150, modifier: 1, slideShadows: false },
+                // --- 新增自動播放邏輯 ---
+                on: {
+                    slideChangeTransitionEnd: function () {
+                        const activeSlide = this.slides[this.activeIndex];
+                        // 找到該張 CD 的點擊元素或獲取 data-url
+                        const cd = activeSlide.querySelector('.cd-disk');
+                        if (cd) {
+                            // 直接調用你原本寫好的 playSong 函式
+                            // 假設你的 renderCD 裡有把 url 存在 dataset 裡
+                            const songUrl = cd.getAttribute('onclick').match(/'([^']+)'/)[1];
+                            const songTitle = cd.innerText; 
+                            playSong(songUrl, songTitle, cd);
+            }
+        }
+    }
             });
         }
 
