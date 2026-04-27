@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chow Chow 專屬音樂台</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <style>
@@ -12,7 +12,7 @@
             --glass: rgba(255, 255, 255, 0.05);
         }
 
-        body {
+       body {
             background-color: var(--bg-color);
             color: white;
             font-family: 'Inter', -apple-system, sans-serif;
@@ -21,8 +21,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            /* 修改這裡：使用 dvh 以適配行動裝置工具欄 */
+            height: 100dvh; 
+            width: 100vw;
             overflow: hidden;
+            /* 增加 padding 防止內容過於貼近邊緣 */
+            padding: 20px 0;
+            box-sizing: border-box;
         }
 
         h1 { font-size: 1.5rem; margin-bottom: 5px; letter-spacing: 2px; }
@@ -30,9 +35,10 @@
 
         /* Swiper 容器設定 */
         .swiper {
+            flex-grow: 1; 
             width: 100%;
-            padding-top: 50px;
-            padding-bottom: 50px;
+            display: flex;
+            align-items: center;
         }
 
         .swiper-slide {
@@ -90,8 +96,9 @@
 
         /* 控制面板 */
         .controls {
-            margin-top: 50px;
-            width: 100%;
+            margin-bottom: env(safe-area-inset-bottom); /* 適配手勢導航列 */
+            padding-bottom: 20px;
+            width: 90%;
             max-width: 400px;
             text-align: center;
         }
