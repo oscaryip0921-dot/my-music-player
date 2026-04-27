@@ -43,6 +43,17 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz43aRnB_lziZ2Bc3_-R3lzEsDqznOqhkAxqKl8kslHJN0aHLkx6zrx-KVp3H3PaA4fkQ/exec';
 
         const player = document.getElementById('main-player');
+        // 1. 初始化時從本地儲存讀取音量
+const savedVolume = localStorage.getItem('oscar_player_volume');
+if (savedVolume !== null) {
+    player.volume = savedVolume;
+}
+
+// 2. 監聽音量變動事件 (volumechange)
+player.addEventListener('volumechange', () => {
+    // 將音量存入 localStorage (值介於 0 到 1 之間)
+    localStorage.setItem('oscar_player_volume', player.volume);
+});
         const playlistDiv = document.getElementById('playlist');
         const currentTitleDisplay = document.getElementById('current-title');
 
