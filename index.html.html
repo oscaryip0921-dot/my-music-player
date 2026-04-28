@@ -77,16 +77,9 @@
 
         /* 強化後的 CD 質感：加入更多線條與反射 */
         .cd-disk {
-            /* 關鍵：只設定寬度，高度由 aspect-ratio 決定 */
-            width: 290px; 
-            /* 2026 時尚標準：強制保持 1:1 正方形比例 */
-            aspect-ratio: 1 / 1; 
-            
-            /* 移除原本固定的 height: 290px; */
-            
-            border-radius: 50%; /* 加上 1:1 的比例，這行就會確保它是正圓 */
-            
-            /* 以下保持原本的質感設定 */
+            width: 290px;
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
             background: 
                 linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%),
                 repeating-radial-gradient(circle, #222 0, #222 1px, #000 1.5px, #111 2.5px);
@@ -94,25 +87,28 @@
             box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.1);
             position: relative;
             cursor: pointer;
-            
-            /* 確保裡面的標籤居中 */
+            display: flex;         /* 改用 Flex 居中 */
+            align-items: center;
+            justify-content: center;
+            will-change: transform; /* 提升動畫效能 */
+        } 
+
+        .cd-label {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e0e0e0, #ffffff);
             display: flex;
             align-items: center;
             justify-content: center;
-        }   
-
-        .cd-label {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            background: #fff;
-            background-image: linear-gradient(135deg, #e0e0e0, #ffffff);
-            display: flex; align-items: center; justify-content: center;
-            text-align: center; color: #000; font-size: 0.7rem; font-weight: 800;
-            padding: 10px; box-sizing: border-box;
+            text-align: center;
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 10px;
+            box-sizing: border-box;
             border: 4px solid #111;
+            pointer-events: none; /* 避免干擾點擊 */
         }
 
         /* 旋轉動畫 */
