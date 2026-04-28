@@ -215,22 +215,18 @@
         <div class="subtitle">PREMIUM CLASSIC SERIES 2026</div>
     </div>
 
-        <div class="player-core">
-            <div id="loader" class="loading-placeholder">
-                <div class="subtitle" style="margin: 0; opacity: 0.5;">LOADING...</div>
-            </div>
-            
-            <div id="light-effect" class="lighting-effect"></div>
-            <div class="swiper">
-                <div class="swiper-wrapper" id="cd-wrapper"></div>
-            </div>
+    <div class="player-core">
+        <div id="loader" class="loading-placeholder">
+            <div class="subtitle" style="margin: 0; opacity: 0.5;">LOADING...</div>
         </div>
+        
         <div id="light-effect" class="lighting-effect"></div>
         
         <div class="swiper">
-            <div class="swiper-wrapper" id="cd-wrapper">
-                </div>
+            <div class="swiper-wrapper" id="cd-wrapper"></div>
         </div>
+    </div>
+
     <div class="controls-panel">
         <div id="song-title">CHOOSE A RECORD</div>
         <audio id="main-player" controls loop></audio>
@@ -246,13 +242,11 @@
         let audioContext, analyser, dataArray;
         let isInitialized = false; 
 
-        // 初始化音量與音量記憶
-        const savedVol = localStorage.getItem('emo_vol') || 0.7;
-        player.volume = savedVol;
+        // 1. 音量管理
+        player.volume = localStorage.getItem('emo_vol') || 0.7;
         player.onvolumechange = () => localStorage.setItem('emo_vol', player.volume);
-        // Hide load
         
-        // 1. 初始化音訊分析器 (Lighting Effect 的關鍵)
+        // 2. 音訊分析器
         function initVisualizer() {
             if (audioContext) return;
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -260,113 +254,83 @@
             analyser = audioContext.createAnalyser();
             source.connect(analyser);
             analyser.connect(audioContext.destination);
-            analyser.fftSize = 64; // 只需要基礎頻率
+            analyser.fftSize = 64;
             dataArray = new Uint8Array(analyser.frequencyBinCount);
             animateGlow();
         }
 
-        // 2. 讓光暈隨音量跳動
         function animateGlow() {
             requestAnimationFrame(animateGlow);
             if (!analyser) return;
             analyser.getByteFrequencyData(dataArray);
-            
-            let sum = 0;
-            for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let sum = dataArray.reduce((a, b) => a + b, 0);
             let average = sum / dataArray.length;
-            
-            // 調整這兩個係數：讓跳動更明顯
-            // 之前可能是 150/255，現在改為 100/150 讓反應更劇烈
-            let scale = 1 + (average / 100); 
-            let opacity = 0.2 + (average / 150); 
-            
-            lightEffect.style.transform = `scale(${scale})`;
-            lightEffect.style.opacity = opacity;
+            lightEffect.style.transform = `scale(${1 + (average / 100)})`;
+            lightEffect.style.opacity = 0.2 + (average / 150);
         }
+
+        // 3. 獲取資料
         async function fetchPlaylist() {
             const loader = document.getElementById('loader');
             try {
-                // 開始獲取清單
                 const res = await fetch(SCRIPT_URL);
                 const songs = await res.json();
-                
-                // 渲染 CD
                 renderCDs(songs);
-                
-                // 渲染後優雅淡出加載屏
                 loader.classList.add('fade-out');
-                setTimeout(() => {
-                    loader.style.display = 'none'; 
-                }, 500);
+                setTimeout(() => loader.style.display = 'none', 500);
             } catch (e) { 
                 console.error(e);
-                const text = loader.querySelector('.subtitle');
-                if (text) text.innerText = "NETWORK ERROR";
+                if (loader.querySelector('.subtitle')) loader.querySelector('.subtitle').innerText = "NETWORK ERROR";
             }
         }
 
+        // 4. 渲染與 Swiper 初始化
         function renderCDs(songs) {
-    const wrapper = document.getElementById('cd-wrapper');
-    
-    // 使用 map 結合 join 一次性注入，效能比 forEach append 更好
-    wrapper.innerHTML = songs.map(song => `
-        <div class="swiper-slide">
-            <div class="cd-disk" data-url="${song.url}" data-title="${song.title}">
-                <div class="cd-label">${song.title}</div>
-            </div>
-        </div>
-    `).join('');
+            const wrapper = document.getElementById('cd-wrapper');
+            wrapper.innerHTML = songs.map(song => `
+                <div class="swiper-slide">
+                    <div class="cd-disk" data-url="${song.url}" data-title="${song.title}">
+                        <div class="cd-label">${song.title}</div>
+                    </div>
+                </div>
+            `).join('');
 
-    const swiper = new Swiper('.swiper', {
-        effect: 'coverflow',
-        centeredSlides: true,
-        slidesPerView: 'auto',
-        coverflowEffect: { rotate: 25, stretch: 0, depth: 150, modifier: 1, slideShadows: false },
-        on: {
-            slideChangeTransitionEnd: function () {
-                const activeSlide = this.slides[this.activeIndex];
-                const cd = activeSlide.querySelector('.cd-disk');
-                if (cd) {
-                    // 直接從 dataset 讀取，不再使用 regex 抓 onclick
-                    playSong(cd.dataset.url, cd.dataset.title, cd);
+            const swiper = new Swiper('.swiper', {
+                effect: 'coverflow',
+                centeredSlides: true,
+                slidesPerView: 'auto',
+                coverflowEffect: { rotate: 25, stretch: 0, depth: 150, modifier: 1, slideShadows: false },
+                on: {
+                    slideChangeTransitionEnd: function () {
+                        const activeSlide = this.slides[this.activeIndex];
+                        const cd = activeSlide.querySelector('.cd-disk');
+                        if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
+                    },
+                    touchStart: () => { if (audioContext?.state === 'suspended') audioContext.resume(); }
                 }
-            },
-            touchStart: () => {
-                if (audioContext?.state === 'suspended') audioContext.resume();
-            }
+            });
+
+            wrapper.addEventListener('click', (e) => {
+                const cd = e.target.closest('.cd-disk');
+                if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
+            });
         }
-    });
 
-    // 點擊 CD 播放
-    wrapper.addEventListener('click', (e) => {
-        const cd = e.target.closest('.cd-disk');
-        if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
-    });
-}
-
-function playSong(url, title, el) {
-            // 1. 初始化與恢復音訊 (保持你原有的優化)
-            if (!isInitialized) {
-                initVisualizer();
-                isInitialized = true;
-            }
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
+        // 5. 播放邏輯 (修復了旋轉動畫與音樂同步)
+        function playSong(url, title, el) {
+            if (!isInitialized) { initVisualizer(); isInitialized = true; }
+            if (audioContext?.state === 'suspended') audioContext.resume();
         
-            // 2. 視覺動畫觸發：讓光暈瞬間擴張再縮小
+            // 快門感視覺回饋
             lightEffect.style.transition = 'none'; 
             lightEffect.style.transform = 'scale(2)';
             lightEffect.style.opacity = '0.8';
-            
-            // 強制重繪後恢復平滑動畫
             setTimeout(() => {
                 lightEffect.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
                 lightEffect.style.transform = 'scale(1)';
                 lightEffect.style.opacity = '0.2';
             }, 50);
         
-            // 3. 設定播放路徑 (保持 Android 優化)
             const playUrl = url.replace(/\.3gp$/, '.mp3');
             if (player.src !== playUrl) {
                 player.src = playUrl;
@@ -379,12 +343,12 @@ function playSong(url, title, el) {
                 });
             }
         
-            // 4. 更新狀態
+            // 關鍵修正：移除所有 slide 的 playing，只加給當前的 slide
             document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-            if(el) el.parentElement.classList.add('playing');
+            if(el) el.closest('.swiper-slide').classList.add('playing');
         }
 
-        // 播放狀態與動畫同步
+        // 播放狀態監控
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
         player.onpause = () => document.querySelector('.swiper-slide-active')?.classList.remove('playing');
 
