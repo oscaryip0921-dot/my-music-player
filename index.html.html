@@ -139,6 +139,48 @@
             height: 35px;
             filter: invert(1) hue-rotate(180deg) brightness(1.5); /* 讓播放器變銀色感 */
         }
+
+        /* 2026 虛擬加載骨架 */
+            .loading-placeholder {
+                position: absolute;
+                width: 290px;
+                height: 290px;
+                border-radius: 50%;
+                background: radial-gradient(circle, #222 0%, #111 100%);
+                border: 2px solid rgba(255, 255, 255, 0.05);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                z-index: 5;
+            }
+            
+            .loading-placeholder::after {
+                content: "";
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.05),
+                    transparent
+                );
+                /* 2026 流行的高速流光感 */
+                animation: loading-shimmer 1.5s infinite linear;
+            }
+            
+            @keyframes loading-shimmer {
+                0% { transform: translateX(-100%) skewX(-15deg); }
+                100% { transform: translateX(100%) skewX(-15deg); }
+            }
+            
+            /* 隱藏加載屏的過渡 */
+            .fade-out {
+                opacity: 0;
+                transition: opacity 0.5s ease-out;
+                pointer-events: none;
+            }
     </style>
 </head>
 <body>
@@ -148,6 +190,16 @@
     </div>
 
     <div class="player-core">
+        <div class="player-core">
+            <div id="loader" class="loading-placeholder">
+                <div class="subtitle" style="margin: 0; opacity: 0.5;">LOADING...</div>
+            </div>
+            
+            <div id="light-effect" class="lighting-effect"></div>
+            <div class="swiper">
+                <div class="swiper-wrapper" id="cd-wrapper"></div>
+            </div>
+        </div>
         <div id="light-effect" class="lighting-effect"></div>
         
         <div class="swiper">
@@ -208,11 +260,24 @@
             lightEffect.style.opacity = opacity;
         }
         async function fetchPlaylist() {
+            const loader = document.getElementById('loader');
             try {
+                // 開始獲取清單
                 const res = await fetch(SCRIPT_URL);
                 const songs = await res.json();
+                
+                // 渲染 CD
                 renderCDs(songs);
-            } catch (e) { console.error(e); }
+                
+                // 渲染後優雅淡出加載屏
+                loader.classList.add('fade-out');
+                setTimeout(() => loader.remove(), 500); 
+                
+            } catch (e) { 
+                console.error(e);
+                const text = loader.querySelector('.subtitle');
+                if (text) text.innerText = "NETWORK ERROR";
+            }
         }
 
         function renderCDs(songs) {
