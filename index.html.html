@@ -9,7 +9,7 @@
         :root {
             --bg-color: #0f0f11;
             --accent-color: #ffffff;
-            --cd-border-color: #2a2a2a; /* 這是你要求的較淺色粗邊 */
+            --cd-border-color: #2a2a2a; /* 你要求的質感灰色粗邊 */
         }
 
         body {
@@ -48,28 +48,14 @@
             background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
             border-radius: 50%;
             filter: blur(60px);
-            opacity: 0.2;
+            opacity: 0.15;
             z-index: 1;
             pointer-events: none;
+            transition: transform 0.1s ease-out;
         }
 
-        .swiper { width: 100%; height: 400px; z-index: 2; display: flex; align-items: center; }
-        
-        /* 浮動動畫：加在 Slide 上，避免影響 CD 旋轉 */
-        @keyframes slide-float {
-            0%, 100% { margin-top: 0; }
-            50% { margin-top: -20px; }
-        }
-
-        .swiper-slide { 
-            display: flex; justify-content: center; align-items: center; width: 300px; 
-            transition: transform 0.6s ease;
-        }
-
-        /* 只有在播放中且是活動項時才飄浮 */
-        .swiper-slide.playing.swiper-slide-active {
-            animation: slide-float 3s ease-in-out infinite;
-        }
+        .swiper { width: 100%; height: 420px; z-index: 2; display: flex; align-items: center; }
+        .swiper-slide { display: flex; justify-content: center; align-items: center; width: 300px; transition: transform 0.6s ease; }
 
         /* CD 盤面設計 */
         .cd-disk {
@@ -79,18 +65,13 @@
             background: 
                 linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%),
                 repeating-radial-gradient(circle, #222 0, #222 1px, #000 1.5px, #111 2.5px);
-            border: 12px solid var(--cd-border-color); /* 調回你要求的粗邊顏色 */
+            border: 12px solid var(--cd-border-color);
             box-shadow: 0 25px 50px rgba(0,0,0,0.8);
             position: relative;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.5s ease;
-        }
-
-        .swiper-slide-active .cd-disk {
-            transform: scale(1.05); /* 選中時稍微放大 */
         }
 
         .cd-label {
@@ -99,20 +80,40 @@
             display: flex; align-items: center; justify-content: center;
             text-align: center; color: #000; font-size: 0.65rem; font-weight: 900;
             padding: 12px; box-sizing: border-box; border: 4px solid #111;
+            pointer-events: none;
         }
 
-        /* 旋轉動畫：只負責旋轉 */
-        @keyframes rotateCD {
-            from { transform: scale(1.05) rotate(0deg); }
-            to { transform: scale(1.05) rotate(360deg); }
+        /* ---------------- 動畫定義區 ---------------- */
+        
+        /* 1. 旋轉動畫 (應用於 cd-disk) */
+        @keyframes rotate-disk {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* 播放中執行旋轉 */
-        .playing .cd-disk {
-            animation: rotateCD 10s linear infinite !important;
+        /* 2. 飄浮動畫 (應用於 swiper-slide) */
+        @keyframes slide-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
 
-        /* Loading */
+        /* 播放狀態下的樣式組合 */
+        .swiper-slide.playing.swiper-slide-active {
+            animation: slide-float 3s ease-in-out infinite;
+        }
+
+        .swiper-slide.playing .cd-disk {
+            animation: rotate-disk 10s linear infinite;
+        }
+
+        /* 選中但未播放時的微放大 */
+        .swiper-slide-active:not(.playing) .cd-disk {
+            transform: scale(1.05);
+            transition: transform 0.5s ease;
+        }
+        
+        /* ---------------- 其他 UI ---------------- */
+
         .loading-placeholder {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 290px; height: 290px; border-radius: 50%;
@@ -153,6 +154,25 @@
         
         let audioContext, analyser, dataArray, isInitialized = false;
 
+        // 初始化音訊環境
+        function initAudio() {
+            if (isInitialized) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaElementSource(player);
+                analyser = audioContext.createAnalyser();
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 64;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isInitialized = true;
+                animateGlow();
+                console.log("Audio Engine Ready");
+            } catch (e) {
+                console.error("Audio Init Failed:", e);
+            }
+        }
+
         async function fetchPlaylist() {
             const loader = document.getElementById('loader');
             try {
@@ -160,7 +180,10 @@
                 const songs = await res.json();
                 renderCDs(songs);
                 loader.classList.add('fade-out');
-            } catch (e) { console.error(e); }
+                setTimeout(() => loader.style.display = 'none', 500);
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function renderCDs(songs) {
@@ -187,45 +210,34 @@
                 }
             });
 
+            // 監聽整個容器的點擊，確保喚醒音訊
             wrapper.addEventListener('click', (e) => {
+                initAudio();
                 const slide = e.target.closest('.swiper-slide');
-                if (slide) swiper.slideTo(Array.from(slide.parentElement.children).indexOf(slide));
+                if (slide) {
+                    const index = Array.from(slide.parentElement.children).indexOf(slide);
+                    swiper.slideTo(index);
+                }
             });
         }
 
         function playSong(url, title, slideEl) {
             if (!url) return;
-            if (!isInitialized) { initVisualizer(); isInitialized = true; }
+            initAudio(); // 確保每次嘗試播放都檢查音訊環境
             if (audioContext?.state === 'suspended') audioContext.resume();
 
             const playUrl = url.replace(/\.3gp$/, '.mp3');
             if (player.src !== playUrl) {
                 player.src = playUrl;
                 player.load();
-                player.play().then(() => {
-                    titleDisplay.innerText = title;
-                }).catch(e => { console.log("Retry..."); player.src = url; player.play(); });
+                player.play()
+                    .then(() => { titleDisplay.innerText = title; })
+                    .catch(e => {
+                        console.log("Play failed, trying original...");
+                        player.src = url;
+                        player.play();
+                    });
             }
-
-            updateAnimationState(slideEl);
-        }
-
-        function updateAnimationState(activeSlide) {
-            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-            if (activeSlide) activeSlide.classList.add('playing');
-        }
-
-        function initVisualizer() {
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaElementSource(player);
-                analyser = audioContext.createAnalyser();
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-                analyser.fftSize = 64;
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-                animateGlow();
-            } catch(e) { console.error(e); }
         }
 
         function animateGlow() {
@@ -233,15 +245,24 @@
             if (!analyser) return;
             analyser.getByteFrequencyData(dataArray);
             let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-            lightEffect.style.transform = `scale(${1 + (avg / 120)})`;
-            lightEffect.style.opacity = 0.2 + (avg / 150);
+            // 讓光暈隨音樂跳動
+            lightEffect.style.transform = `scale(${1 + (avg / 100)})`;
+            lightEffect.style.opacity = 0.15 + (avg / 150);
         }
 
-        // 當按下暫停時停止旋轉
-        player.onpause = () => document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+        // 強力同步：根據 player 的真實狀態來控制動畫 Class
         player.onplay = () => {
             const activeSlide = document.querySelector('.swiper-slide-active');
             if (activeSlide) activeSlide.classList.add('playing');
+        };
+
+        player.onpause = () => {
+            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+        };
+
+        // 防止某些情況下 class 沒被移除
+        player.onended = () => {
+            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
         };
 
         fetchPlaylist();
