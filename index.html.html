@@ -216,88 +216,71 @@
         }
 
         function renderCDs(songs) {
-            const wrapper = document.getElementById('cd-wrapper');
-            songs.forEach(song => {
-                const slide = document.createElement('div');
-                slide.className = 'swiper-slide';
-                slide.innerHTML = `
-                    <div class="cd-disk" onclick="playSong('${song.url}', '${song.title}', this)">
-                        <div class="cd-label">${song.title}</div>
-                    </div>
-                `;
-                wrapper.appendChild(slide);
-            });
+    const wrapper = document.getElementById('cd-wrapper');
+    
+    // 使用 map 結合 join 一次性注入，效能比 forEach append 更好
+    wrapper.innerHTML = songs.map(song => `
+        <div class="swiper-slide">
+            <div class="cd-disk" data-url="${song.url}" data-title="${song.title}">
+                <div class="cd-label">${song.title}</div>
+            </div>
+        </div>
+    `).join('');
 
-            new Swiper('.swiper', {
-                effect: 'coverflow',
-                centeredSlides: true,
-                slidesPerView: 'auto',
-                coverflowEffect: { rotate: 25, stretch: 0, depth: 150, modifier: 1, slideShadows: false },
-                // --- 新增自動播放邏輯 ---
-                on: {
-                    slideChangeTransitionEnd: function () {
-                        const activeSlide = this.slides[this.activeIndex];
-                        // 找到該張 CD 的點擊元素或獲取 data-url
-                        const cd = activeSlide.querySelector('.cd-disk');
-                        if (cd) {
-                            // 直接調用你原本寫好的 playSong 函式
-                            // 假設你的 renderCD 裡有把 url 存在 dataset 裡
-                            const songUrl = cd.getAttribute('onclick').match(/'([^']+)'/)[1];
-                            const songTitle = cd.innerText; 
-                            playSong(songUrl, songTitle, cd);
-            }
-        },
-                    // 額外加入這個，讓 Android 在使用者開始滑動的那一刻就嘗試恢復音訊
-                touchStart: function() {
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
+    const swiper = new Swiper('.swiper', {
+        effect: 'coverflow',
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        coverflowEffect: { rotate: 25, stretch: 0, depth: 150, modifier: 1, slideShadows: false },
+        on: {
+            slideChangeTransitionEnd: function () {
+                const activeSlide = this.slides[this.activeIndex];
+                const cd = activeSlide.querySelector('.cd-disk');
+                if (cd) {
+                    // 直接從 dataset 讀取，不再使用 regex 抓 onclick
+                    playSong(cd.dataset.url, cd.dataset.title, cd);
+                }
+            },
+            touchStart: () => {
+                if (audioContext?.state === 'suspended') audioContext.resume();
             }
         }
+    });
+
+    // 點擊 CD 播放
+    wrapper.addEventListener('click', (e) => {
+        const cd = e.target.closest('.cd-disk');
+        if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
+    });
+}
+
+function playSong(url, title, el) {
+    if (!isInitialized) {
+        initVisualizer();
+        isInitialized = true;
     }
-            });
-        }
+    
+    // 簡潔的格式轉換邏輯
+    const playUrl = url.replace(/\.3gp$/, '.mp3');
+    
+    if (player.src !== playUrl) {
+        player.crossOrigin = "anonymous";
+        player.src = playUrl;
+        player.load();
+        
+        player.play().then(() => {
+            titleDisplay.innerText = title;
+        }).catch(err => {
+            console.error("Playback failed, trying original URL:", err);
+            player.src = url; // 失敗則回退到原 URL
+            player.play();
+        });
+    }
 
-        function playSong(url, title, el) {
-            // 1. 初始化音訊引擎
-            if (!isInitialized) {
-                initVisualizer();
-                isInitialized = true;
-            }
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-        
-            // 2. 針對 Android 的格式優化
-            // 如果網址是 .3gp，嘗試換成 .mp3 看看 (Cloudinary 通常支援)
-            let playUrl = url;
-            if (playUrl.endsWith('.3gp')) {
-                playUrl = playUrl.replace('.3gp', '.mp3');
-            }
-        
-            // 3. 設定屬性
-            player.crossOrigin = "anonymous"; // 動態加入
-            player.src = playUrl;
-            player.load(); 
-        
-            // 4. 播放並處理錯誤
-            const playPromise = player.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    titleDisplay.innerText = title;
-                }).catch(error => {
-                    console.error("Android 播放攔截:", error);
-                    // 如果還是不行，可能是 3gp/mp3 轉換問題，換回原網址試試
-                    if (playUrl !== url) {
-                        player.src = url;
-                        player.play();
-                    }
-                });
-            }
-        
-            // 動畫邏輯
-            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-            if(el) el.parentElement.classList.add('playing');
-        }
+    // 更新播放動畫狀態
+    document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+    el?.parentElement.classList.add('playing');
+}
 
         // 播放狀態與動畫同步
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
