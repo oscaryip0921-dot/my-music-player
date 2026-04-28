@@ -8,14 +8,11 @@
     <style>
         :root {
             --bg-color: #0f0f11;
-            --surface-color: #1a1a1d;
-            --accent-color: #ffffff; /* 2026 流行純白光感 */
-            --glow-color: rgba(255, 255, 255, 0.1);
+            --accent-color: #ffffff;
         }
 
         body {
             background-color: var(--bg-color);
-            /* 2026 經典黑色背景質感：加入微弱的噪點與漸層 */
             background-image: radial-gradient(circle at center, #252528 0%, #0f0f11 100%);
             color: #e0e0e0;
             font-family: 'Inter', -apple-system, sans-serif;
@@ -24,32 +21,26 @@
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            height: 100dvh; /* 解決行動端 URL 遮擋 */
+            height: 100dvh;
             overflow: hidden;
             box-sizing: border-box;
             padding: 40px 0;
         }
 
-        /* 標題區：時尚窄體設計 */
-        .header {
-            text-align: center;
-            z-index: 10;
-        }
+        .header { text-align: center; z-index: 10; }
         h1 { font-size: 1.2rem; letter-spacing: 5px; font-weight: 200; margin: 0; color: var(--accent-color); text-shadow: 0 0 10px rgba(255,255,255,0.3); }
         .subtitle { font-size: 0.7rem; color: #666; letter-spacing: 3px; margin-top: 5px; }
 
-        /* CD 與光暈容器 */
-       .player-core {
+        .player-core {
             position: relative;
             width: 100%;
             flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: visible; /* 確保光暈不被切掉 */
+            overflow: visible;
         }
 
-        /* 2026 重點：動態光暈 (會隨 JS 控制大小) */
         .lighting-effect {
             position: absolute;
             width: 420px;
@@ -57,47 +48,16 @@
             background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 75%);
             border-radius: 50%;
             filter: blur(60px);
-            opacity: 0.2; /* 基本亮度 */
-            transition: transform 0.08s ease-out;
+            opacity: 0.2;
+            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
             pointer-events: none;
             z-index: 1;
         }
 
-        .swiper {
-            width: 100%;
-            height: 400px;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-        }
+        .swiper { width: 100%; height: 400px; z-index: 2; display: flex; align-items: center; }
+        .swiper-slide { display: flex; justify-content: center; align-items: center; width: 300px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-        .swiper-slide {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 300px;
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* 帶點彈性的 2026 動感 */
-        }
-
-        /* 當 slide 變成活動狀態時，稍微放大並提升亮度 */
-        .swiper-slide-active .cd-disk {
-            transform: scale(1.1); /* 稍微放大 */
-            filter: brightness(1.2); /* 增加光感 */
-            box-shadow: 0 40px 80px rgba(0,0,0,1), 0 0 20px rgba(255,255,255,0.2);
-            border-color: rgba(255, 255, 255, 0.3); /* 邊框變亮 */
-        }
-
-        /* 播放時的額外動畫：輕微的上下浮動 (Hovering) */
-            @keyframes cd-float {
-                0%, 100% { transform: scale(1.1) translateY(0); }
-                50% { transform: scale(1.1) translateY(-10px); }
-            }
-            
-            .playing.swiper-slide-active .cd-disk {
-                animation: rotateCD 8s linear infinite, cd-float 3s ease-in-out infinite;
-            }
-
-        /* 強化後的 CD 質感：加入更多線條與反射 */
+        /* CD 基礎樣式 */
         .cd-disk {
             width: 290px;
             aspect-ratio: 1 / 1;
@@ -106,107 +66,60 @@
                 linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%),
                 repeating-radial-gradient(circle, #222 0, #222 1px, #000 1.5px, #111 2.5px);
             border: 10px solid #1a1a1a;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.1);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9);
             position: relative;
             cursor: pointer;
-            display: flex;         /* 改用 Flex 居中 */
-            align-items: center;
-            justify-content: center;
-            will-change: transform; /* 提升動畫效能 */
-        } 
-
-        .cd-label {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #e0e0e0, #ffffff);
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            color: #000;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 4px solid #111;
-            pointer-events: none; /* 避免干擾點擊 */
+            will-change: transform;
         }
 
-        /* 旋轉動畫 */
-        .playing .cd-disk {
-            animation: rotateCD 8s linear infinite;
+        .cd-label {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: linear-gradient(135deg, #e0e0e0, #ffffff);
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; color: #000; font-size: 0.7rem; font-weight: 800;
+            padding: 10px; box-sizing: border-box; border: 4px solid #111;
         }
 
+        /* 2026 核心動畫：旋轉 + 飄浮 */
         @keyframes rotateCD { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* 底部控制台：經典灰黑質感 */
-        .controls-panel {
-            width: 85%;
-            max-width: 450px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(15px);
-            border-radius: 25px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
-            text-align: center;
-            z-index: 10;
-            margin-bottom: 20px;
+        @keyframes cd-float {
+            0%, 100% { transform: scale(1.1) translateY(0); }
+            50% { transform: scale(1.1) translateY(-12px); }
         }
 
-        #song-title { font-size: 0.9rem; margin-bottom: 15px; font-weight: 300; letter-spacing: 1px; color: #aaa; }
-
-        audio {
-            width: 100%;
-            height: 35px;
-            filter: invert(1) hue-rotate(180deg) brightness(1.5); /* 讓播放器變銀色感 */
+        /* 選中狀態：放大 */
+        .swiper-slide-active .cd-disk {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+            box-shadow: 0 40px 80px rgba(0,0,0,1), 0 0 20px rgba(255,255,255,0.1);
         }
 
-        /* 2026 虛擬加載骨架 */
-            .loading-placeholder {
-                position: absolute; /* 關鍵：脫離文檔流 */
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%); /* 完美居中 */
-                width: 290px;
-                height: 290px;
-                border-radius: 50%;
-                background: radial-gradient(circle, #222 0%, #111 100%);
-                border: 2px solid rgba(255, 255, 255, 0.05);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-                z-index: 20; /* 確保在最上層 */
-                pointer-events: none; /* 防止遮擋點擊 */
-            }
-            
-            .loading-placeholder::after {
-                content: "";
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(255, 255, 255, 0.05),
-                    transparent
-                );
-                /* 2026 流行的高速流光感 */
-                animation: loading-shimmer 1.5s infinite linear;
-            }
-            
-            @keyframes loading-shimmer {
-                0% { transform: translateX(-100%) skewX(-15deg); }
-                100% { transform: translateX(100%) skewX(-15deg); }
-            }
-            
-            /* 隱藏加載屏的過渡 */
-            .fade-out {
-                opacity: 0;
-                transition: opacity 0.5s ease-out;
-                pointer-events: none;
-            }
+        /* 播放狀態：旋轉 + 飄浮 */
+        .playing.swiper-slide-active .cd-disk {
+            animation: rotateCD 8s linear infinite, cd-float 3s ease-in-out infinite !important;
+        }
+
+        /* Loading 效果 */
+        .loading-placeholder {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 290px; height: 290px; border-radius: 50%;
+            background: radial-gradient(circle, #222 0%, #111 100%);
+            z-index: 20; display: flex; align-items: center; justify-content: center;
+        }
+        .loading-placeholder::after {
+            content: ""; position: absolute; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            animation: loading-shimmer 1.5s infinite linear;
+        }
+        @keyframes loading-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .fade-out { opacity: 0; transition: opacity 0.5s; pointer-events: none; }
+
+        .controls-panel { width: 85%; max-width: 450px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border-radius: 25px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); text-align: center; z-index: 10; margin-bottom: 20px; }
+        #song-title { font-size: 0.9rem; margin-bottom: 15px; color: #aaa; letter-spacing: 1px; }
+        audio { width: 100%; height: 35px; filter: invert(1) brightness(1.5); }
     </style>
 </head>
 <body>
@@ -217,19 +130,17 @@
 
     <div class="player-core">
         <div id="loader" class="loading-placeholder">
-            <div class="subtitle" style="margin: 0; opacity: 0.5;">LOADING...</div>
+            <div class="subtitle" style="opacity: 0.5;">LOADING...</div>
         </div>
-        
         <div id="light-effect" class="lighting-effect"></div>
-        
         <div class="swiper">
             <div class="swiper-wrapper" id="cd-wrapper"></div>
         </div>
     </div>
 
     <div class="controls-panel">
-        <div id="song-title">CHOOSE A RECORD</div>
-        <audio id="main-player" controls loop></audio>
+        <div id="song-title">SELECT A RECORD</div>
+        <audio id="main-player" controls loop crossorigin="anonymous"></audio>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -239,37 +150,8 @@
         const lightEffect = document.getElementById('light-effect');
         const titleDisplay = document.getElementById('song-title');
         
-        let audioContext, analyser, dataArray;
-        let isInitialized = false; 
+        let audioContext, analyser, dataArray, isInitialized = false;
 
-        // 1. 音量管理
-        player.volume = localStorage.getItem('emo_vol') || 0.7;
-        player.onvolumechange = () => localStorage.setItem('emo_vol', player.volume);
-        
-        // 2. 音訊分析器
-        function initVisualizer() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioContext.createMediaElementSource(player);
-            analyser = audioContext.createAnalyser();
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-            analyser.fftSize = 64;
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            animateGlow();
-        }
-
-        function animateGlow() {
-            requestAnimationFrame(animateGlow);
-            if (!analyser) return;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = dataArray.reduce((a, b) => a + b, 0);
-            let average = sum / dataArray.length;
-            lightEffect.style.transform = `scale(${1 + (average / 100)})`;
-            lightEffect.style.opacity = 0.2 + (average / 150);
-        }
-
-        // 3. 獲取資料
         async function fetchPlaylist() {
             const loader = document.getElementById('loader');
             try {
@@ -278,19 +160,19 @@
                 renderCDs(songs);
                 loader.classList.add('fade-out');
                 setTimeout(() => loader.style.display = 'none', 500);
-            } catch (e) { 
-                console.error(e);
-                if (loader.querySelector('.subtitle')) loader.querySelector('.subtitle').innerText = "NETWORK ERROR";
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                loader.querySelector('.subtitle').innerText = "NETWORK ERROR";
             }
         }
 
-        // 4. 渲染與 Swiper 初始化
         function renderCDs(songs) {
             const wrapper = document.getElementById('cd-wrapper');
+            // 注意：這裡強制檢查 song 物件屬性名稱，確保與你 GAS 回傳的一致
             wrapper.innerHTML = songs.map(song => `
                 <div class="swiper-slide">
-                    <div class="cd-disk" data-url="${song.url}" data-title="${song.title}">
-                        <div class="cd-label">${song.title}</div>
+                    <div class="cd-disk" data-url="${song.url || song.Url}" data-title="${song.title || song.Title}">
+                        <div class="cd-label">${song.title || song.Title}</div>
                     </div>
                 </div>
             `).join('');
@@ -304,25 +186,26 @@
                     slideChangeTransitionEnd: function () {
                         const activeSlide = this.slides[this.activeIndex];
                         const cd = activeSlide.querySelector('.cd-disk');
-                        if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
-                    },
-                    touchStart: () => { if (audioContext?.state === 'suspended') audioContext.resume(); }
+                        if (cd) playSong(cd.dataset.url, cd.dataset.title, activeSlide);
+                    }
                 }
             });
 
+            // 點擊也觸發播放
             wrapper.addEventListener('click', (e) => {
-                const cd = e.target.closest('.cd-disk');
-                if (cd) playSong(cd.dataset.url, cd.dataset.title, cd);
+                const slide = e.target.closest('.swiper-slide');
+                const cd = slide?.querySelector('.cd-disk');
+                if (cd) playSong(cd.dataset.url, cd.dataset.title, slide);
             });
         }
 
-        // 5. 播放邏輯 (修復了旋轉動畫與音樂同步)
-        function playSong(url, title, el) {
+        function playSong(url, title, slideEl) {
+            if (!url) return;
             if (!isInitialized) { initVisualizer(); isInitialized = true; }
             if (audioContext?.state === 'suspended') audioContext.resume();
-        
-            // 快門感視覺回饋
-            lightEffect.style.transition = 'none'; 
+
+            // 視覺閃爍
+            lightEffect.style.transition = 'none';
             lightEffect.style.transform = 'scale(2)';
             lightEffect.style.opacity = '0.8';
             setTimeout(() => {
@@ -330,7 +213,7 @@
                 lightEffect.style.transform = 'scale(1)';
                 lightEffect.style.opacity = '0.2';
             }, 50);
-        
+
             const playUrl = url.replace(/\.3gp$/, '.mp3');
             if (player.src !== playUrl) {
                 player.src = playUrl;
@@ -338,17 +221,40 @@
                 player.play().then(() => {
                     titleDisplay.innerText = title;
                 }).catch(e => {
-                    player.src = url;
+                    console.log("Auto-play blocked or error, trying fallback...");
+                    player.src = url; // 嘗試原始 URL
                     player.play();
                 });
             }
-        
-            // 關鍵修正：移除所有 slide 的 playing，只加給當前的 slide
+
+            // 同步動畫類名
             document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-            if(el) el.closest('.swiper-slide').classList.add('playing');
+            slideEl.classList.add('playing');
         }
 
-        // 播放狀態監控
+        function initVisualizer() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaElementSource(player);
+                analyser = audioContext.createAnalyser();
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 64;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                animateGlow();
+            } catch(e) { console.error("Visualizer Init Failed", e); }
+        }
+
+        function animateGlow() {
+            requestAnimationFrame(animateGlow);
+            if (!analyser) return;
+            analyser.getByteFrequencyData(dataArray);
+            let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            lightEffect.style.transform = `scale(${1 + (avg / 100)})`;
+            lightEffect.style.opacity = 0.2 + (avg / 150);
+        }
+
+        // 監控播放器的真實狀態
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
         player.onpause = () => document.querySelector('.swiper-slide-active')?.classList.remove('playing');
 
