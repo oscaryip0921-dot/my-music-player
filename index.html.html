@@ -76,7 +76,26 @@
             justify-content: center;
             align-items: center;
             width: 300px;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* 帶點彈性的 2026 動感 */
         }
+
+        /* 當 slide 變成活動狀態時，稍微放大並提升亮度 */
+        .swiper-slide-active .cd-disk {
+            transform: scale(1.1); /* 稍微放大 */
+            filter: brightness(1.2); /* 增加光感 */
+            box-shadow: 0 40px 80px rgba(0,0,0,1), 0 0 20px rgba(255,255,255,0.2);
+            border-color: rgba(255, 255, 255, 0.3); /* 邊框變亮 */
+        }
+
+        /* 播放時的額外動畫：輕微的上下浮動 (Hovering) */
+            @keyframes cd-float {
+                0%, 100% { transform: scale(1.1) translateY(0); }
+                50% { transform: scale(1.1) translateY(-10px); }
+            }
+            
+            .playing.swiper-slide-active .cd-disk {
+                animation: rotateCD 8s linear infinite, cd-float 3s ease-in-out infinite;
+            }
 
         /* 強化後的 CD 質感：加入更多線條與反射 */
         .cd-disk {
@@ -326,32 +345,44 @@
 }
 
 function playSong(url, title, el) {
-    if (!isInitialized) {
-        initVisualizer();
-        isInitialized = true;
-    }
-    
-    // 簡潔的格式轉換邏輯
-    const playUrl = url.replace(/\.3gp$/, '.mp3');
-    
-    if (player.src !== playUrl) {
-        player.crossOrigin = "anonymous";
-        player.src = playUrl;
-        player.load();
+            // 1. 初始化與恢復音訊 (保持你原有的優化)
+            if (!isInitialized) {
+                initVisualizer();
+                isInitialized = true;
+            }
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
         
-        player.play().then(() => {
-            titleDisplay.innerText = title;
-        }).catch(err => {
-            console.error("Playback failed, trying original URL:", err);
-            player.src = url; // 失敗則回退到原 URL
-            player.play();
-        });
-    }
-
-    // 更新播放動畫狀態
-    document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
-    el?.parentElement.classList.add('playing');
-}
+            // 2. 視覺動畫觸發：讓光暈瞬間擴張再縮小
+            lightEffect.style.transition = 'none'; 
+            lightEffect.style.transform = 'scale(2)';
+            lightEffect.style.opacity = '0.8';
+            
+            // 強制重繪後恢復平滑動畫
+            setTimeout(() => {
+                lightEffect.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
+                lightEffect.style.transform = 'scale(1)';
+                lightEffect.style.opacity = '0.2';
+            }, 50);
+        
+            // 3. 設定播放路徑 (保持 Android 優化)
+            const playUrl = url.replace(/\.3gp$/, '.mp3');
+            if (player.src !== playUrl) {
+                player.src = playUrl;
+                player.load();
+                player.play().then(() => {
+                    titleDisplay.innerText = title;
+                }).catch(e => {
+                    player.src = url;
+                    player.play();
+                });
+            }
+        
+            // 4. 更新狀態
+            document.querySelectorAll('.swiper-slide').forEach(s => s.classList.remove('playing'));
+            if(el) el.parentElement.classList.add('playing');
+        }
 
         // 播放狀態與動畫同步
         player.onplay = () => document.querySelector('.swiper-slide-active')?.classList.add('playing');
